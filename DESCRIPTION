@@ -1,0 +1,25 @@
+Package: nestclean
+Type: Package
+Title: A Package for Checking NEST Lab Data Cleaning Projects
+Version: 0.1.0
+Authors@R: 
+    person(given = "Elizabeth", 
+           family = "Aviv", 
+           role = c("aut", "cre"), 
+           email = "eaviv@usc.edu")
+Description: The `nestclean` package provides tools to check and summarize the outcome of data cleaning for the NEST lab. 
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    dplyr (>= 1.0.0),
+    tidyr (>= 1.0.0),
+    sjlabelled (>= 1.1.0),
+    kableExtra (>= 1.3.1)
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+RoxygenNote: 7.3.2
