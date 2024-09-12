@@ -1,4 +1,4 @@
-# use devtools::document() and devtools::install()
+# devtools::document(); devtools::install()
 
 #' Summarize Continuous Variables
 #'
@@ -75,7 +75,7 @@ check_categorical <- function(df, ...) {
     tidyr::pivot_wider(names_from = name, values_from = count, values_fill = list(count = 0))
 }
 
-#' Retrieve Variable Labels
+#' Inspect Variable Labels
 #'
 #' This function retrieves the labels of specified variables in a data frame and displays them in a formatted table.
 #'
@@ -85,6 +85,7 @@ check_categorical <- function(df, ...) {
 #' @importFrom dplyr select
 #' @importFrom sjlabelled get_label
 #' @importFrom kableExtra kbl kable_styling column_spec row_spec scroll_box
+#' @importFrom magrittr %>%
 #' @export
 inspect_labels <- function(df, ...) {
   df_selected <- df %>%
@@ -111,6 +112,44 @@ inspect_labels <- function(df, ...) {
   return(formatted_output)
 }
 
+
+#' Inspect Variable Names and Column Numbers
+#'
+#' This function selects specified columns from a data frame and returns a formatted table with the original column numbers and variable names.
+#'
+#' @param df A data frame containing the variables.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to select (e.g., column names, column ranges, or selection helpers like contains()).
+#' @return A formatted table displaying the original column numbers and variable names.
+#' @importFrom dplyr select
+#' @importFrom kableExtra kbl kable_styling column_spec row_spec scroll_box
+#' @importFrom magrittr %>%
+#' @export
+inspect_var_names <- function(df, ...) {
+  # Select the specified columns
+  df_selected <- df %>% dplyr::select(...)
+
+  # Get the column numbers from the original data frame using match()
+  original_column_numbers <- match(names(df_selected), names(df))
+
+  # Combine the original column numbers and variable names into a data frame
+  labels_df <- data.frame(
+    Column_Number = original_column_numbers,  # Use original column numbers
+    Variable = names(df_selected),
+    stringsAsFactors = FALSE
+  )
+
+  # Format the output with kableExtra
+  formatted_output <- labels_df %>%
+    kableExtra::kbl(centering = TRUE, align = c("c", "l")) %>%  # c = center for 1st column, l = left for 2nd column
+    kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+    kableExtra::column_spec(1, width = "auto", border_left = TRUE, border_right = TRUE) %>%  # Adjust width and borders for column 1
+    kableExtra::column_spec(2, width = "auto", border_left = TRUE, border_right = TRUE) %>%  # Adjust width and borders for column 2
+    kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%  # Add bottom border to header row
+    kableExtra::scroll_box(height = "400px", width = "100%")  # Set height for vertical scroll
+
+  return(formatted_output)
+}
+
 #' Print a Random Slice of Data
 #'
 #' This function selects and prints a random sample of 6 rows from specified columns in a data frame, formatted as a table.
@@ -120,6 +159,7 @@ inspect_labels <- function(df, ...) {
 #' @return A formatted table displaying a random slice of the selected data.
 #' @importFrom dplyr select ungroup slice_sample
 #' @importFrom kableExtra kbl kable_styling row_spec scroll_box
+#' @importFrom magrittr %>%
 #' @export
 print_slice <- function(df, ...) {
   df %>%

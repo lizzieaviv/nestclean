@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions.R
 \name{inspect_labels}
 \alias{inspect_labels}
-\title{Retrieve Variable Labels}
+\title{Inspect Variable Labels}
 \usage{
 inspect_labels(df, ...)
 }
