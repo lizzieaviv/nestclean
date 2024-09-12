@@ -3,16 +3,16 @@
 #' This function calculates summary statistics (mean, minimum, maximum, and missing count) for specified continuous variables in a data frame. The results are returned in a long format with each statistic as a separate row.
 #'
 #' @param df A data frame containing the variables to be summarized.
-#' @param summary_cols A tidy-select expression that specifies the columns to summarize.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to summarize (e.g., column names, column ranges, or selection helpers like contains()).
 #' @return A data frame in long format with the summary statistics for each variable.
-#' @importFrom dplyr ungroup summarise across arrange
+#' @importFrom dplyr ungroup summarise across select arrange
 #' @importFrom tidyr pivot_longer
 #' @importFrom magrittr %>%
 #' @export
-check_continuous <- function(df, summary_cols) {
+check_continuous <- function(df, ...) {
   df %>%
     dplyr::ungroup() %>%
-    dplyr::summarise(across({{summary_cols}}, list(
+    dplyr::summarise(across(dplyr::select(df, ...), list(
       mean = ~round(mean(.x, na.rm = TRUE), 1),
       min = ~min(.x, na.rm = TRUE),
       max = ~max(.x, na.rm = TRUE),
@@ -28,7 +28,7 @@ check_continuous <- function(df, summary_cols) {
 #' This function calculates the frequency count for each unique value of the specified categorical variables in a data frame. The results include counts of missing values and are returned in a wide format.
 #'
 #' @param df A data frame containing the categorical variables to be summarized.
-#' @param ... Column names of the categorical variables to be summarized.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to summarize (e.g., column names, column ranges, or selection helpers like contains()).
 #' @return A data frame in wide format with the frequency counts for each value of the specified variables.
 #' @importFrom dplyr select bind_rows arrange
 #' @importFrom tidyr pivot_wider
@@ -78,15 +78,16 @@ check_categorical <- function(df, ...) {
 #' This function retrieves the labels of specified variables in a data frame and displays them in a formatted table.
 #'
 #' @param df A data frame containing the variables.
-#' @param columns_range A tidy-select expression that specifies the columns to retrieve labels for.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to retrieve labels for (e.g., column names, column ranges, or selection helpers like contains()).
 #' @return A formatted table displaying the variable labels.
 #' @importFrom dplyr select
 #' @importFrom sjlabelled get_label
 #' @importFrom kableExtra kbl kable_styling column_spec row_spec scroll_box
-#' @importFrom magrittr %>%
 #' @export
-inspect_labels <- function(df, columns_range) {
-  df_selected <- df %>% dplyr::select({{columns_range}})
+inspect_labels <- function(df, ...) {
+  df_selected <- df %>%
+    dplyr::select(...)
+
   original_column_numbers <- match(names(df_selected), names(df))
 
   labels_df <- data.frame(
@@ -113,15 +114,14 @@ inspect_labels <- function(df, columns_range) {
 #' This function selects and prints a random sample of 6 rows from specified columns in a data frame, formatted as a table.
 #'
 #' @param df A data frame containing the data.
-#' @param columns_range A tidy-select expression that specifies the columns to be printed along with `CoupleID` and `Parent`.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to print (e.g., column names, column ranges, or selection helpers like contains()).
 #' @return A formatted table displaying a random slice of the selected data.
 #' @importFrom dplyr select ungroup slice_sample
 #' @importFrom kableExtra kbl kable_styling row_spec scroll_box
-#' @importFrom magrittr %>%
 #' @export
-print_slice <- function(df, columns_range) {
+print_slice <- function(df, ...) {
   df %>%
-    dplyr::select(c(CoupleID, Parent, {{columns_range}})) %>%
+    dplyr::select(c(CoupleID, Parent, ...)) %>%
     dplyr::ungroup() %>%
     dplyr::slice_sample(n = 6) %>%
     kableExtra::kbl(centering = TRUE) %>%
@@ -135,10 +135,10 @@ print_slice <- function(df, columns_range) {
 #' This function displays a specified subset of columns in a data frame, including `CoupleID` and `Parent`.
 #'
 #' @param df A data frame containing the data.
-#' @param columns_range A tidy-select expression that specifies the columns to view along with `CoupleID` and `Parent`.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to view (e.g., column names, column ranges, or selection helpers like contains()).
 #' @return Opens the specified columns in a new View window.
 #' @importFrom dplyr select
 #' @export
-view_selected <- function(df, columns_range) {
-  View(dplyr::select(df, CoupleID, Parent, {{columns_range}}))
+view_selected <- function(df, ...) {
+  View(dplyr::select(df, CoupleID, Parent, ...))
 }
