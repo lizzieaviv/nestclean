@@ -4,12 +4,12 @@
 \alias{view_selected}
 \title{View Specific Columns in Data Frame}
 \usage{
-view_selected(df, columns_range)
+view_selected(df, ...)
 }
 \arguments{
 \item{df}{A data frame containing the data.}
 
-\item{columns_range}{A tidy-select expression that specifies the columns to view along with `CoupleID` and `Parent`.}
+\item{...}{One or more unquoted expressions separated by commas, indicating variables to view (e.g., column names, column ranges, or selection helpers like contains()).}
 }
 \value{
 Opens the specified columns in a new View window.

@@ -4,12 +4,12 @@
 \alias{check_continuous}
 \title{Summarize Continuous Variables}
 \usage{
-check_continuous(df, summary_cols)
+check_continuous(df, ...)
 }
 \arguments{
 \item{df}{A data frame containing the variables to be summarized.}
 
-\item{summary_cols}{A tidy-select expression that specifies the columns to summarize.}
+\item{...}{One or more unquoted expressions separated by commas, indicating variables to summarize (e.g., column names, column ranges, or selection helpers like contains()).}
 }
 \value{
 A data frame in long format with the summary statistics for each variable.

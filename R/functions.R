@@ -1,3 +1,5 @@
+# use devtools::document() and devtools::install()
+
 #' Summarize Continuous Variables
 #'
 #' This function calculates summary statistics (mean, minimum, maximum, and missing count) for specified continuous variables in a data frame. The results are returned in a long format with each statistic as a separate row.
@@ -5,14 +7,14 @@
 #' @param df A data frame containing the variables to be summarized.
 #' @param ... One or more unquoted expressions separated by commas, indicating variables to summarize (e.g., column names, column ranges, or selection helpers like contains()).
 #' @return A data frame in long format with the summary statistics for each variable.
-#' @importFrom dplyr ungroup summarise across select arrange
+#' @importFrom dplyr ungroup summarise across arrange
 #' @importFrom tidyr pivot_longer
 #' @importFrom magrittr %>%
 #' @export
 check_continuous <- function(df, ...) {
   df %>%
     dplyr::ungroup() %>%
-    dplyr::summarise(across(dplyr::select(df, ...), list(
+    dplyr::summarise(across(c(...), list(
       mean = ~round(mean(.x, na.rm = TRUE), 1),
       min = ~min(.x, na.rm = TRUE),
       max = ~max(.x, na.rm = TRUE),

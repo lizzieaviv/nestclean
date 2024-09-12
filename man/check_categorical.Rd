@@ -9,7 +9,7 @@ check_categorical(df, ...)
 \arguments{
 \item{df}{A data frame containing the categorical variables to be summarized.}
 
-\item{...}{Column names of the categorical variables to be summarized.}
+\item{...}{One or more unquoted expressions separated by commas, indicating variables to summarize (e.g., column names, column ranges, or selection helpers like contains()).}
 }
 \value{
 A data frame in wide format with the frequency counts for each value of the specified variables.

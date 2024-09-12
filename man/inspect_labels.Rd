@@ -4,12 +4,12 @@
 \alias{inspect_labels}
 \title{Retrieve Variable Labels}
 \usage{
-inspect_labels(df, columns_range)
+inspect_labels(df, ...)
 }
 \arguments{
 \item{df}{A data frame containing the variables.}
 
-\item{columns_range}{A tidy-select expression that specifies the columns to retrieve labels for.}
+\item{...}{One or more unquoted expressions separated by commas, indicating variables to retrieve labels for (e.g., column names, column ranges, or selection helpers like contains()).}
 }
 \value{
 A formatted table displaying the variable labels.

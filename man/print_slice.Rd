@@ -4,12 +4,12 @@
 \alias{print_slice}
 \title{Print a Random Slice of Data}
 \usage{
-print_slice(df, columns_range)
+print_slice(df, ...)
 }
 \arguments{
 \item{df}{A data frame containing the data.}
 
-\item{columns_range}{A tidy-select expression that specifies the columns to be printed along with `CoupleID` and `Parent`.}
+\item{...}{One or more unquoted expressions separated by commas, indicating variables to print (e.g., column names, column ranges, or selection helpers like contains()).}
 }
 \value{
 A formatted table displaying a random slice of the selected data.
