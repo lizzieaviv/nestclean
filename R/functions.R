@@ -216,6 +216,6 @@ view_selected <- function(df, ...) {
 #' @return Opens the specified columns in a new View window.
 #' @importFrom dplyr select
 #' @export
-view_selected <- function(df, ...) {
+view_selected_chirp <- function(df, ...) {
   View(dplyr::select(df, ID, ...))
 }
