@@ -150,7 +150,7 @@ inspect_var_names <- function(df, ...) {
   return(formatted_output)
 }
 
-#' Print a Random Slice of Data
+#' Print a Random Slice of Data: HATCH
 #'
 #' This function selects and prints a random sample of 6 rows from specified columns in a data frame, formatted as a table.
 #'
@@ -172,7 +172,29 @@ print_slice <- function(df, ...) {
     kableExtra::scroll_box(width = "100%")
 }
 
-#' View Specific Columns in Data Frame
+#' Print a Random Slice of Data (CHIRP)
+#'
+#' This function selects and prints a random sample of 6 rows from specified columns in a data frame, formatted as a table.
+#'
+#' @param df A data frame containing the data.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to print (e.g., column names, column ranges, or selection helpers like contains()).
+#' @return A formatted table displaying a random slice of the selected data.
+#' @importFrom dplyr select ungroup slice_sample
+#' @importFrom kableExtra kbl kable_styling row_spec scroll_box
+#' @importFrom magrittr %>%
+#' @export
+print_slice_chirp <- function(df, ...) {
+  df %>%
+    dplyr::select(c(ID, ...)) %>%
+    dplyr::ungroup() %>%
+    dplyr::slice_sample(n = 6) %>%
+    kableExtra::kbl(centering = TRUE) %>%
+    kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+    kableExtra::row_spec(0:6, align = "center") %>%
+    kableExtra::scroll_box(width = "100%")
+}
+
+#' View Specific Columns in Data Frame: HATCH
 #'
 #' This function displays a specified subset of columns in a data frame, including `CoupleID` and `Parent`.
 #'
@@ -183,4 +205,17 @@ print_slice <- function(df, ...) {
 #' @export
 view_selected <- function(df, ...) {
   View(dplyr::select(df, CoupleID, Parent, ...))
+}
+
+#' View Specific Columns in Data Frame: CHIRP
+#'
+#' This function displays a specified subset of columns in a data frame, including `CoupleID` and `Parent`.
+#'
+#' @param df A data frame containing the data.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to view (e.g., column names, column ranges, or selection helpers like contains()).
+#' @return Opens the specified columns in a new View window.
+#' @importFrom dplyr select
+#' @export
+view_selected <- function(df, ...) {
+  View(dplyr::select(df, ID, ...))
 }
