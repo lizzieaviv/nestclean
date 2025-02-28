@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions.R
 \name{print_slice}
 \alias{print_slice}
-\title{Print a Random Slice of Data}
+\title{Print a Random Slice of Data: HATCH}
 \usage{
 print_slice(df, ...)
 }

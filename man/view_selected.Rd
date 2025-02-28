@@ -2,8 +2,10 @@
 % Please edit documentation in R/functions.R
 \name{view_selected}
 \alias{view_selected}
-\title{View Specific Columns in Data Frame}
+\title{View Specific Columns in Data Frame: HATCH}
 \usage{
+view_selected(df, ...)
+
 view_selected(df, ...)
 }
 \arguments{
@@ -13,7 +15,11 @@ view_selected(df, ...)
 }
 \value{
 Opens the specified columns in a new View window.
+
+Opens the specified columns in a new View window.
 }
 \description{
+This function displays a specified subset of columns in a data frame, including `CoupleID` and `Parent`.
+
 This function displays a specified subset of columns in a data frame, including `CoupleID` and `Parent`.
 }
