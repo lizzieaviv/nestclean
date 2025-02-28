@@ -1,4 +1,4 @@
-# devtools::document(); devtools::install()
+# any time I make a change, run the following: devtools::document(); devtools::install()
 
 #' Summarize Continuous Variables
 #'
