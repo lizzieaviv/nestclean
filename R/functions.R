@@ -165,10 +165,10 @@ print_slice <- function(df, ...) {
   df %>%
     dplyr::select(c(CoupleID, Parent, ...)) %>%
     dplyr::ungroup() %>%
-    dplyr::slice_sample(n = 6) %>%
+    dplyr::slice_sample(n = min(nrow(.), 6)) %>%
     kableExtra::kbl(centering = TRUE) %>%
     kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-    kableExtra::row_spec(0:6, align = "center") %>%
+    kableExtra::row_spec(0:n(), align = "center") %>%
     kableExtra::scroll_box(width = "100%")
 }
 
