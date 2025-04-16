@@ -168,7 +168,7 @@ print_slice <- function(df, ...) {
     dplyr::slice_sample(n = min(nrow(.), 6)) %>%
     kableExtra::kbl(centering = TRUE) %>%
     kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-    kableExtra::row_spec(0:n(), align = "center") %>%
+    kableExtra::row_spec(0:(nrow(.) + 1), align = "center") %>%
     kableExtra::scroll_box(width = "100%")
 }
 
