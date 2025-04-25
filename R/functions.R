@@ -59,38 +59,69 @@ check_categorical <- function(df, ...) {
     colnames()
 
   combined_results <- tibble::tibble()
+  value_label_table <- tibble::tibble()
 
   for (column in selected_columns) {
     x <- df[[column]]
-    value <- sort(unique(sjlabelled::remove_all_labels(x)))
-    label <- sjlabelled::get_labels(x, drop.unused = TRUE)
 
-    if (length(label) < length(value)) {
-      label <- c(label, rep(NA, length(value) - length(label)))
+    # Value-label mapping
+    values <- sort(unique(sjlabelled::remove_all_labels(x)))
+    labels <- sjlabelled::get_labels(x, drop.unused = TRUE)
+
+    if (length(labels) < length(values)) {
+      labels <- c(labels, rep(NA, length(values) - length(labels)))
     }
 
+    value_label_table <- bind_rows(
+      value_label_table,
+      tibble(value = values, label = labels)
+    )
+
+    # Counts
     count <- summary(as.factor(na.omit(x)))
     na_count <- sum(is.na(x))
 
-    result <- tibble::tibble(
+    result <- tibble(
       name  = column,
-      value = c(value, NA),
-      label = c(label, "No response"),
+      value = c(values, NA),
+      label = c(labels, "No response"),
       count = c(as.numeric(count), na_count)
-    )
+    ) %>%
+      arrange(value)
 
-    result <- result %>%
-      dplyr::arrange(value)
-
-    combined_results <- dplyr::bind_rows(combined_results, result)
+    combined_results <- bind_rows(combined_results, result)
   }
 
-  combined_results %>%
+  # ── Print value-label table ──
+  value_label_table <- distinct(value_label_table)
+
+  if (nrow(value_label_table) > 0) {
+    value_label_kbl <- value_label_table %>%
+      kableExtra::kbl(centering = TRUE, align = c("c", "l")) %>%
+      kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+      kableExtra::column_spec(1:2, width = "auto", border_left = TRUE, border_right = TRUE) %>%
+      kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%
+      kableExtra::scroll_box(height = "400px", width = "100%")
+
+    print(value_label_kbl)
+  }
+
+  # ── Print wide count table ──
+  count_table <- combined_results %>%
     tidyr::pivot_wider(
       names_from  = name,
       values_from = count,
       values_fill = list(count = 0)
     )
+
+  count_table_kbl <- count_table %>%
+    kableExtra::kbl(centering = TRUE) %>%
+    kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+    kableExtra::scroll_box(height = "400px", width = "100%")
+
+  print(count_table_kbl)
+
+  invisible(NULL)
 }
 
 #' Inspect Variable Labels
