@@ -27,19 +27,19 @@ check_continuous <- function(df, ...) {
 
 #' Summarize Categorical Variables
 #'
-#' Returns a scrollable summary table of value counts (including 0s and NAs) for selected variables.
-#' Set `print = FALSE` to return a pipeable data frame instead.
+#' Returns a long-format tibble with value counts, including zeros and missing values.
+#' If not assigned, prints a scrollable summary in the Viewer pane.
 #'
 #' @param df A data frame.
 #' @param ... Unquoted tidyselect expressions.
-#' @param print Whether to print as a scrollable table (default TRUE).
-#' @return A scrollable HTML table (default) or a long-format data frame if `print = FALSE`.
+#' @return A tibble (long-format). Printed as scrollable table if not assigned.
 #' @importFrom dplyr select bind_rows arrange mutate
 #' @importFrom sjlabelled get_labels remove_all_labels
 #' @importFrom tibble tibble
+#' @importFrom purrr map_dbl
 #' @importFrom kableExtra kbl kable_styling scroll_box
 #' @export
-check_categorical <- function(df, ..., print = TRUE) {
+check_categorical <- function(df, ...) {
   selected_columns <- df %>%
     dplyr::select(...) %>%
     colnames()
@@ -51,6 +51,7 @@ check_categorical <- function(df, ..., print = TRUE) {
     raw_vals <- sort(unique(sjlabelled::remove_all_labels(x)))
     labels <- sjlabelled::get_labels(x, drop.unused = FALSE)
 
+    # Match label/value lengths
     if (length(labels) < length(raw_vals)) {
       labels <- c(labels, rep(NA, length(raw_vals) - length(labels)))
     } else if (length(labels) > length(raw_vals)) {
@@ -70,6 +71,23 @@ check_categorical <- function(df, ..., print = TRUE) {
       label = "No response",
       count = sum(is.na(x))
     )
+
+    combined_results <- dplyr::bind_rows(combined_results, count_df, na_row)
+  }
+
+  out <- combined_results %>% dplyr::arrange(value)
+
+  # Only show a scrollable HTML table if the user didn't assign the output
+  if (interactive() && is.null(sys.calls()[[sys.nframe() - 1]])) {
+    out %>%
+      kableExtra::kbl(align = "c") %>%
+      kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+      kableExtra::scroll_box(width = "100%", height = "400px") %>%
+      print()
+  }
+
+  return(out)
+}
 
 #' Inspect Variable Labels
 #'
@@ -170,63 +188,48 @@ print_slice <- function(df, ...) {
 
 #' Print a Random Slice of Data (CHIRP)
 #'
-#' Summarize Categorical Variables (Scrollable Table by Default)
+#' This function selects and prints a random sample of 6 rows from specified columns in a data frame, formatted as a table.
 #'
-#' Returns a scrollable summary table of value counts (including 0s and NAs) for selected variables.
-#' Set `print = FALSE` to return a pipeable data frame instead.
-#'
-#' @param df A data frame.
-#' @param ... Unquoted tidyselect expressions.
-#' @param print Whether to print as a scrollable table (default TRUE).
-#' @return A scrollable HTML table (default) or a long-format data frame if `print = FALSE`.
-#' @importFrom dplyr select bind_rows arrange mutate
-#' @importFrom sjlabelled get_labels remove_all_labels
-#' @importFrom tibble tibble
-#' @importFrom kableExtra kbl kable_styling scroll_box
+#' @param df A data frame containing the data.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to print (e.g., column names, column ranges, or selection helpers like contains()).
+#' @return A formatted table displaying a random slice of the selected data.
+#' @importFrom dplyr select ungroup slice_sample
+#' @importFrom kableExtra kbl kable_styling row_spec scroll_box
+#' @importFrom magrittr %>%
 #' @export
-check_categorical <- function(df, ..., print = TRUE) {
-  selected_columns <- df %>%
-    dplyr::select(...) %>%
-    colnames()
+print_slice_chirp <- function(df, ...) {
+  df %>%
+    dplyr::select(c(ID, ...)) %>%
+    dplyr::ungroup() %>%
+    dplyr::slice_sample(n = 6) %>%
+    kableExtra::kbl(centering = TRUE) %>%
+    kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+    kableExtra::row_spec(0:6, align = "center") %>%
+    kableExtra::scroll_box(width = "100%")
+}
 
-  combined_results <- tibble::tibble()
+#' View Specific Columns in Data Frame: HATCH
+#'
+#' This function displays a specified subset of columns in a data frame, including `CoupleID` and `Parent`.
+#'
+#' @param df A data frame containing the data.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to view (e.g., column names, column ranges, or selection helpers like contains()).
+#' @return Opens the specified columns in a new View window.
+#' @importFrom dplyr select
+#' @export
+view_selected <- function(df, ...) {
+  View(dplyr::select(df, CoupleID, Parent, ...))
+}
 
-  for (column in selected_columns) {
-    x <- df[[column]]
-    raw_vals <- sort(unique(sjlabelled::remove_all_labels(x)))
-    labels <- sjlabelled::get_labels(x, drop.unused = FALSE)
-
-    if (length(labels) < length(raw_vals)) {
-      labels <- c(labels, rep(NA, length(raw_vals) - length(labels)))
-    } else if (length(labels) > length(raw_vals)) {
-      raw_vals <- c(raw_vals, rep(NA, length(labels) - length(raw_vals)))
-    }
-
-    count_df <- tibble::tibble(
-      name = column,
-      value = raw_vals,
-      label = labels,
-      count = purrr::map_dbl(raw_vals, ~ sum(x == .x, na.rm = TRUE))
-    )
-
-    na_row <- tibble::tibble(
-      name = column,
-      value = NA,
-      label = "No response",
-      count = sum(is.na(x))
-    )
-
-    combined_results <- dplyr::bind_rows(combined_results, count_df, na_row)
-  }
-
-  output <- combined_results %>% dplyr::arrange(value)
-
-  if (print) {
-    output %>%
-      kableExtra::kbl(align = "c") %>%
-      kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-      kableExtra::scroll_box(width = "100%", height = "400px")
-  } else {
-    output
-  }
+#' View Specific Columns in Data Frame: CHIRP
+#'
+#' This function displays a specified subset of columns in a data frame, including `CoupleID` and `Parent`.
+#'
+#' @param df A data frame containing the data.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to view (e.g., column names, column ranges, or selection helpers like contains()).
+#' @return Opens the specified columns in a new View window.
+#' @importFrom dplyr select
+#' @export
+view_selected_chirp <- function(df, ...) {
+  View(dplyr::select(df, ID, ...))
 }
