@@ -51,7 +51,6 @@ check_categorical <- function(df, ...) {
     raw_vals <- sort(unique(sjlabelled::remove_all_labels(x)))
     labels <- sjlabelled::get_labels(x, drop.unused = FALSE)
 
-    # Match label/value lengths
     if (length(labels) < length(raw_vals)) {
       labels <- c(labels, rep(NA, length(raw_vals) - length(labels)))
     } else if (length(labels) > length(raw_vals)) {
@@ -77,13 +76,14 @@ check_categorical <- function(df, ...) {
 
   out <- combined_results %>% dplyr::arrange(value)
 
-  # Only show a scrollable HTML table if the user didn't assign the output
-  if (interactive() && is.null(sys.calls()[[sys.nframe() - 1]])) {
-    out %>%
+  # Show in Viewer pane if not assigned
+  if (interactive() && is.null(names(utils::sys.calls()[[sys.nframe() - 1]]))) {
+    html <- out %>%
       kableExtra::kbl(align = "c") %>%
       kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-      kableExtra::scroll_box(width = "100%", height = "400px") %>%
-      print()
+      kableExtra::scroll_box(width = "100%", height = "400px")
+
+    htmltools::browsable(html) %>% print()
   }
 
   return(out)
