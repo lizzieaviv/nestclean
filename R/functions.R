@@ -54,6 +54,7 @@ check_continuous <- function(df, ...) {
 #' @importFrom magrittr %>%
 #' @export
 check_categorical <- function(df, ...) {
+  # 1. figure out which columns to summarize
   selected_columns <- df %>%
     dplyr::select(...) %>%
     colnames()
@@ -63,35 +64,42 @@ check_categorical <- function(df, ...) {
   for (column in selected_columns) {
     x <- df[[column]]
 
-    # 1. grab full label defs (codes → text), keep unused levels
+    # 2. get the raw numeric/vector of values (strip labels entirely)
+    raw_vals <- sjlabelled::remove_all_labels(x)
+    # force numeric for counting
+    raw_vals_num <- as.numeric(raw_vals)
+
+    # 3. pull every defined label (keep unused)
     label_vec  <- sjlabelled::get_labels(x, drop.unused = FALSE)
     label_defs <- tibble::tibble(
-      value = unname(label_vec),      # the numeric codes
-      label = names(label_vec)        # the corresponding text
+      value = as.numeric(label_vec),
+      label = names(label_vec)
     )
 
-    # 2. observed non-NA codes
-    observed_vals <- sort(unique(sjlabelled::remove_all_labels(x)))
+    # 4. all codes to count = observed + defined
+    observed_vals <- unique(raw_vals_num[!is.na(raw_vals_num)])
+    all_vals      <- sort(unique(c(observed_vals, label_defs$value)))
 
-    # 3. union of observed + defined codes
-    all_vals <- sort(unique(c(observed_vals, label_defs$value)))
+    # 5. count each code, plus NA
+    counts <- sapply(all_vals, function(v) sum(raw_vals_num == v, na.rm = TRUE))
+    na_count <- sum(is.na(raw_vals_num))
 
-    # 4. count each code (0 if absent)
-    count_df <- tibble::tibble(
+    # 6. build a little data.frame
+    df_counts <- tibble::tibble(
       name  = column,
       value = all_vals,
-      count = purrr::map_dbl(all_vals, ~ sum(x == .x, na.rm = TRUE))
+      count = as.numeric(counts)
     )
 
-    # 5. join in text labels, then add the NA row
-    result <- count_df %>%
+    # 7. join in the text labels, add the NA‐row
+    result <- df_counts %>%
       dplyr::left_join(label_defs, by = "value") %>%
       dplyr::bind_rows(
         tibble::tibble(
           name  = column,
           value = NA_real_,
           label = "No response",
-          count = sum(is.na(x))
+          count = na_count
         )
       ) %>%
       dplyr::arrange(value)
@@ -99,7 +107,7 @@ check_categorical <- function(df, ...) {
     combined_results <- dplyr::bind_rows(combined_results, result)
   }
 
-  # 6. pivot to wide, filling missing with 0
+  # 8. pivot to wide, fill missing with 0
   combined_results %>%
     tidyr::pivot_wider(
       names_from  = name,
