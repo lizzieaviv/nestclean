@@ -110,6 +110,7 @@ inspect_labels <- function(df, ...) {
 
   original_column_numbers <- match(names(df_selected), names(df))
 
+<<<<<<< HEAD
   # ── Create value-label table (formerly get_value_labels) ──
   value_label_df <- df_selected %>%
     purrr::map_dfr(~ {
@@ -126,6 +127,37 @@ inspect_labels <- function(df, ...) {
     kableExtra::column_spec(1:2, width = "auto", border_left = TRUE, border_right = TRUE) %>%
     kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%
     kableExtra::scroll_box(height = "400px", width = "100%")
+=======
+  # ── Create value-label table ──
+  value_label_df <- df_selected %>%
+    purrr::map_dfr(~ {
+      values <- sort(unique(sjlabelled::remove_all_labels(.x)))
+      labels <- sjlabelled::get_labels(.x, drop.unused = TRUE)
+
+      # Only return tibble if labels exist
+      if (length(labels) > 0) {
+        tibble(
+          value = values,
+          label = labels
+        )
+      } else {
+        tibble()  # empty tibble
+      }
+    }) %>%
+    dplyr::distinct()
+
+  # Only create the formatted value-label table if non-empty
+  if (nrow(value_label_df) > 0) {
+    formatted_value_label_table <- value_label_df %>%
+      kableExtra::kbl(centering = TRUE, align = c("c", "l")) %>%
+      kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+      kableExtra::column_spec(1:2, width = "auto", border_left = TRUE, border_right = TRUE) %>%
+      kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%
+      kableExtra::scroll_box(height = "400px", width = "100%")
+  } else {
+    formatted_value_label_table <- NULL
+  }
+>>>>>>> 2cdac73 (update inspect_labels again)
 
   # ── Create variable label table ──
   labels_df <- data.frame(
