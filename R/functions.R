@@ -144,52 +144,81 @@ check_categorical <- function(df, ...) {
 #' @importFrom kableExtra kbl kable_styling column_spec row_spec scroll_box
 #' @importFrom magrittr %>%
 #' @export
-inspect_labels <- function(df, ...) {
-  df_selected <- df %>% dplyr::select(...)
+check_categorical <- function(df, ...) {
+  selected_columns <- df %>%
+    dplyr::select(...) %>%
+    colnames()
 
-  original_column_numbers <- match(names(df_selected), names(df))
+  combined_results <- tibble::tibble()
+  value_label_table <- tibble::tibble()
 
-  # ── Value-label table ──
-  value_label_df <- df_selected %>%
-    purrr::map_dfr(~ {
-      values <- sort(unique(sjlabelled::remove_all_labels(.x)))
-      labels <- sjlabelled::get_labels(.x, drop.unused = TRUE)
+  for (column in selected_columns) {
+    x <- df[[column]]
 
-      if (length(labels) > 0) {
+    # Value-label mapping
+    values <- sort(unique(sjlabelled::remove_all_labels(x)))
+    labels <- sjlabelled::get_labels(x, drop.unused = TRUE)
+
+    if (length(labels) < length(values)) {
+      labels <- c(labels, rep(NA, length(values) - length(labels)))
+    }
+
+    if (length(values) > 0 || length(labels) > 0) {
+      value_label_table <- bind_rows(
+        value_label_table,
         tibble(value = values, label = labels)
-      } else {
-        tibble()  # skip if no labels
-      }
-    }) %>%
-    dplyr::distinct()
+      )
+    }
 
-  if (nrow(value_label_df) > 0) {
-    value_label_table <- value_label_df %>%
+    count <- summary(as.factor(na.omit(x)))
+    na_count <- sum(is.na(x))
+
+    if (length(values) > 0) {
+      result <- tibble(
+        name  = column,
+        value = c(values, NA),
+        label = c(labels, "No response"),
+        count = c(as.numeric(count), na_count)
+      )
+
+      result <- tryCatch({
+        dplyr::arrange(result, value)
+      }, error = function(e) {
+        result  # skip arrange if it fails
+      })
+
+      combined_results <- bind_rows(combined_results, result)
+    }
+  }
+
+  value_label_table <- dplyr::distinct(value_label_table)
+
+  if (nrow(value_label_table) > 0) {
+    value_label_kbl <- value_label_table %>%
       kableExtra::kbl(centering = TRUE, align = c("c", "l")) %>%
       kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
       kableExtra::column_spec(1:2, width = "auto", border_left = TRUE, border_right = TRUE) %>%
       kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%
       kableExtra::scroll_box(height = "400px", width = "100%")
 
-    print(value_label_table)
+    print(value_label_kbl)
   }
 
-  # ── Variable label table ──
-  labels_df <- data.frame(
-    Column_Number = original_column_numbers,
-    Variable = names(df_selected),
-    Label = unname(sjlabelled::get_label(df_selected, def.value = "unlabelled")),
-    stringsAsFactors = FALSE
-  )
+  if (nrow(combined_results) > 0) {
+    count_table <- combined_results %>%
+      tidyr::pivot_wider(
+        names_from = name,
+        values_from = count,
+        values_fill = list(count = 0)
+      )
 
-  variable_label_table <- labels_df %>%
-    kableExtra::kbl(centering = TRUE, align = c("c", "l", "l")) %>%
-    kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-    kableExtra::column_spec(1:3, width = "auto", border_left = TRUE, border_right = TRUE) %>%
-    kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%
-    kableExtra::scroll_box(height = "400px", width = "100%")
+    count_table_kbl <- count_table %>%
+      kableExtra::kbl(centering = TRUE) %>%
+      kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+      kableExtra::scroll_box(height = "400px", width = "100%")
 
-  print(variable_label_table)
+    print(count_table_kbl)
+  }
 
   invisible(NULL)
 }
