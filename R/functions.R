@@ -23,6 +23,10 @@ check_continuous <- function(df, ...) {
     tidyr::pivot_longer(everything(),
                         names_to = c("function", ".value"),
                         names_sep = "-")
+
+  # blank out the first column name
+  names(out)[1] <- ""
+  out
 }
 
 #' Summarize Categorical Variables
