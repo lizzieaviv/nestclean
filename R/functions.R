@@ -72,24 +72,30 @@ check_categorical <- function(df, ...) {
       labels <- c(labels, rep(NA, length(values) - length(labels)))
     }
 
-    value_label_table <- bind_rows(
-      value_label_table,
-      tibble(value = values, label = labels)
-    )
+    # Only bind value/label rows if there is something to show
+    if (length(values) > 0 || length(labels) > 0) {
+      value_label_table <- bind_rows(
+        value_label_table,
+        tibble(value = values, label = labels)
+      )
+    }
 
     # Counts
     count <- summary(as.factor(na.omit(x)))
     na_count <- sum(is.na(x))
 
-    result <- tibble(
-      name  = column,
-      value = c(values, NA),
-      label = c(labels, "No response"),
-      count = c(as.numeric(count), na_count)
-    ) %>%
-      arrange(value)
+    # Only add result if there's any data
+    if (length(values) > 0) {
+      result <- tibble(
+        name  = column,
+        value = c(values, NA),
+        label = c(labels, "No response"),
+        count = c(as.numeric(count), na_count)
+      ) %>%
+        arrange(value)
 
-    combined_results <- bind_rows(combined_results, result)
+      combined_results <- bind_rows(combined_results, result)
+    }
   }
 
   # ── Print value-label table ──
@@ -107,19 +113,21 @@ check_categorical <- function(df, ...) {
   }
 
   # ── Print wide count table ──
-  count_table <- combined_results %>%
-    tidyr::pivot_wider(
-      names_from  = name,
-      values_from = count,
-      values_fill = list(count = 0)
-    )
+  if (nrow(combined_results) > 0) {
+    count_table <- combined_results %>%
+      tidyr::pivot_wider(
+        names_from  = name,
+        values_from = count,
+        values_fill = list(count = 0)
+      )
 
-  count_table_kbl <- count_table %>%
-    kableExtra::kbl(centering = TRUE) %>%
-    kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-    kableExtra::scroll_box(height = "400px", width = "100%")
+    count_table_kbl <- count_table %>%
+      kableExtra::kbl(centering = TRUE) %>%
+      kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+      kableExtra::scroll_box(height = "400px", width = "100%")
 
-  print(count_table_kbl)
+    print(count_table_kbl)
+  }
 
   invisible(NULL)
 }
