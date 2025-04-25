@@ -155,7 +155,6 @@ inspect_labels <- function(df, ...) {
   invisible(NULL)
 }
 
-
 #' Inspect Variable Names and Column Numbers
 #'
 #' This function selects specified columns from a data frame and returns a formatted table with the original column numbers and variable names.
