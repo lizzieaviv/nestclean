@@ -23,9 +23,6 @@ check_continuous <- function(df, ...) {
     tidyr::pivot_longer(everything(),
                         names_to = c("function", ".value"),
                         names_sep = "-")
-
-  names(out)[1] <- ""    # ← blank out the first column name
-  out
 }
 
 #' Summarize Categorical Variables
@@ -75,9 +72,7 @@ check_categorical <- function(df, ...) {
   }
 
   combined_results %>%
-    tidyr::pivot_wider(names_from = name,
-                       values_from = count,
-                       values_fill = list(count = 0))
+    tidyr::pivot_wider(names_from = name, values_from = count, values_fill = list(count = 0))
 }
 
 #' Inspect Variable Labels
