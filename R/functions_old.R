@@ -27,17 +27,16 @@ check_continuous <- function(df, ...) {
 
 #' Summarize Categorical Variables
 #'
-#' This function calculates the frequency count for each unique value of the specified categorical variables.
-#' Includes 0-count values and missing values. Results are displayed in a scrollable wide-format table.
+#' This function calculates the frequency count for each unique value of the specified categorical variables in a data frame. The results include counts of missing values and are returned in a wide format.
 #'
-#' @param df A data frame containing the categorical variables to summarize.
-#' @param ... Unquoted expressions selecting columns (e.g., contains()).
-#' @return A scrollable HTML table of counts.
+#' @param df A data frame containing the categorical variables to be summarized.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to summarize (e.g., column names, column ranges, or selection helpers like contains()).
+#' @return A data frame in wide format with the frequency counts for each value of the specified variables.
 #' @importFrom dplyr select bind_rows arrange
 #' @importFrom tidyr pivot_wider
 #' @importFrom sjlabelled get_labels remove_all_labels
 #' @importFrom tibble tibble
-#' @importFrom kableExtra kbl kable_styling scroll_box
+#' @importFrom magrittr %>%
 #' @export
 check_categorical <- function(df, ...) {
   selected_columns <- df %>%
@@ -48,44 +47,32 @@ check_categorical <- function(df, ...) {
 
   for (column in selected_columns) {
     x <- df[[column]]
-    raw_vals <- sort(unique(sjlabelled::remove_all_labels(x)))
-    labels <- sjlabelled::get_labels(x, drop.unused = FALSE)
+    value <- sort(unique(sjlabelled::remove_all_labels(x)))
+    label <- sjlabelled::get_labels(x, drop.unused = TRUE)
 
-    # Ensure label and value lengths match
-    if (length(labels) < length(raw_vals)) {
-      labels <- c(labels, rep(NA, length(raw_vals) - length(labels)))
-    } else if (length(labels) > length(raw_vals)) {
-      raw_vals <- c(raw_vals, rep(NA, length(labels) - length(raw_vals)))
+    if (length(label) < length(value)) {
+      label <- c(label, rep(NA, length(value) - length(label)))
     }
 
-    # Match values to counts (0 if not present)
-    count_df <- tibble::tibble(value = raw_vals) %>%
-      dplyr::mutate(
-        count = purrr::map_dbl(value, ~ sum(x == .x, na.rm = TRUE)),
-        label = labels
-      )
+    count <- summary(as.factor(na.omit(x)))
+    na_count <- sum(is.na(x))
 
-    # Add NA count
-    na_row <- tibble::tibble(
-      value = NA,
-      label = "No response",
-      count = sum(is.na(x))
+    result <- tibble::tibble(
+      name = column,
+      value = c(value, NA),
+      label = c(label, "No response"),
+      count = c(as.numeric(count), na_count)
     )
 
-    result <- dplyr::bind_rows(count_df, na_row) %>%
-      dplyr::mutate(name = column) %>%
+    # Sort the result by value
+    result <- result %>%
       dplyr::arrange(value)
 
     combined_results <- dplyr::bind_rows(combined_results, result)
   }
 
-  wide <- combined_results %>%
+  combined_results %>%
     tidyr::pivot_wider(names_from = name, values_from = count, values_fill = list(count = 0))
-
-  wide %>%
-    kableExtra::kbl(align = "c") %>%
-    kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-    kableExtra::scroll_box(width = "100%", height = "400px")
 }
 
 #' Inspect Variable Labels
