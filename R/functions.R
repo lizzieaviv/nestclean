@@ -155,39 +155,39 @@ inspect_labels <- function(df, ...) {
   invisible(NULL)
 }
 
-#' Inspect Variable Names and Column Numbers
+#' Inspect Variable Labels
 #'
-#' This function selects specified columns from a data frame and returns a formatted table with the original column numbers and variable names.
+#' This function retrieves the labels of specified variables in a data frame and displays them in a formatted table.
 #'
 #' @param df A data frame containing the variables.
-#' @param ... One or more unquoted expressions separated by commas, indicating variables to select (e.g., column names, column ranges, or selection helpers like contains()).
-#' @return A formatted table displaying the original column numbers and variable names.
+#' @param ... One or more unquoted expressions separated by commas, indicating variables to retrieve labels for (e.g., column names, column ranges, or selection helpers like contains()).
+#' @return A formatted table displaying the variable labels.
 #' @importFrom dplyr select
+#' @importFrom sjlabelled get_label
 #' @importFrom kableExtra kbl kable_styling column_spec row_spec scroll_box
 #' @importFrom magrittr %>%
 #' @export
-inspect_var_names <- function(df, ...) {
-  # Select the specified columns
-  df_selected <- df %>% dplyr::select(...)
+inspect_labels <- function(df, ...) {
+  df_selected <- df %>%
+    dplyr::select(...)
 
-  # Get the column numbers from the original data frame using match()
   original_column_numbers <- match(names(df_selected), names(df))
 
-  # Combine the original column numbers and variable names into a data frame
   labels_df <- data.frame(
-    Column_Number = original_column_numbers,  # Use original column numbers
+    Column_Number = original_column_numbers,
     Variable = names(df_selected),
+    Label = unname(sjlabelled::get_label(df_selected, def.value = "unlabelled")),
     stringsAsFactors = FALSE
   )
 
-  # Format the output with kableExtra
   formatted_output <- labels_df %>%
-    kableExtra::kbl(centering = TRUE, align = c("c", "l")) %>%  # c = center for 1st column, l = left for 2nd column
+    kableExtra::kbl(centering = TRUE, align = c("c", "l", "l")) %>%
     kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-    kableExtra::column_spec(1, width = "auto", border_left = TRUE, border_right = TRUE) %>%  # Adjust width and borders for column 1
-    kableExtra::column_spec(2, width = "auto", border_left = TRUE, border_right = TRUE) %>%  # Adjust width and borders for column 2
-    kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%  # Add bottom border to header row
-    kableExtra::scroll_box(height = "400px", width = "100%")  # Set height for vertical scroll
+    kableExtra::column_spec(1, width = "auto", border_left = TRUE, border_right = TRUE) %>%
+    kableExtra::column_spec(2, width = "auto", border_left = TRUE, border_right = TRUE) %>%
+    kableExtra::column_spec(3, width = "auto", border_left = TRUE, border_right = TRUE) %>%
+    kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%
+    kableExtra::scroll_box(height = "400px", width = "100%")
 
   return(formatted_output)
 }
