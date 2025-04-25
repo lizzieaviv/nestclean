@@ -63,41 +63,46 @@ check_categorical <- function(df, ...) {
   for (column in selected_columns) {
     x <- df[[column]]
 
-    # 1. Get all defined label values (keep unused)
-    label_vec    <- sjlabelled::get_labels(x, drop.unused = FALSE)
-    all_vals     <- suppressWarnings(as.numeric(names(label_vec)))
+    # 1. Get all defined label codes & their text
+    label_vec  <- sjlabelled::get_labels(x, drop.unused = FALSE)
+    label_defs <- tibble::tibble(
+      value = as.numeric(label_vec),   # the coded values
+      label = names(label_vec)         # the text labels
+    )
 
-    # 2. Get observed (non-NA) values
+    # 2. Determine all codes we need (observed + defined)
     observed_vals <- sort(unique(sjlabelled::remove_all_labels(x)))
+    all_vals      <- sort(union(observed_vals, label_defs$value))
 
-    # 3. Union for full set of values
-    value <- sort(union(observed_vals, all_vals))
-
-    # 4. Align labels to that full set
-    label <- label_vec[as.character(value)]
-
-    # 5. Count occurrences (0 if absent)
-    count    <- sapply(value, function(v) sum(x == v, na.rm = TRUE))
-    na_count <- sum(is.na(x))
-
-    # 6. Build a long‐format tibble for this variable
-    result <- tibble::tibble(
+    # 3. Count each code (0 if never seen)
+    count_df <- tibble::tibble(
       name  = column,
-      value = c(value, NA),
-      label = c(unname(label), "No response"),
-      count = c(as.numeric(count), na_count)
-    ) %>%
+      value = all_vals,
+      count = purrr::map_dbl(all_vals, ~ sum(x == .x, na.rm = TRUE))
+    )
+
+    # 4. Add the “No response” row
+    na_row <- tibble::tibble(
+      name  = column,
+      value = NA_real_,
+      count = sum(is.na(x))
+    )
+
+    # 5. Merge in labels, then bind the NA row
+    result <- count_df %>%
+      dplyr::left_join(label_defs, by = "value") %>%
+      dplyr::bind_rows(na_row %>% dplyr::mutate(label = "No response")) %>%
       dplyr::arrange(value)
 
     combined_results <- dplyr::bind_rows(combined_results, result)
   }
 
-  # 7. Pivot to wide, filling zeros
+  # 6. Pivot to wide
   combined_results %>%
     tidyr::pivot_wider(
-      names_from  = name,
-      values_from = count,
-      values_fill = list(count = 0)
+      names_from   = name,
+      values_from  = count,
+      values_fill  = list(count = 0)
     )
 }
 
