@@ -23,6 +23,9 @@ check_continuous <- function(df, ...) {
     tidyr::pivot_longer(everything(),
                         names_to = c("function", ".value"),
                         names_sep = "-")
+
+  names(out)[1] <- ""    # ← blank out the first column name
+  out
 }
 
 #' Summarize Categorical Variables
@@ -39,40 +42,38 @@ check_continuous <- function(df, ...) {
 #' @importFrom magrittr %>%
 #' @export
 check_categorical <- function(df, ...) {
-  selected_columns <- df %>%
-    dplyr::select(...) %>%
-    colnames()
-
-  combined_results <- tibble::tibble()
-
-  for (column in selected_columns) {
-    x <- df[[column]]
-    value <- sort(unique(sjlabelled::remove_all_labels(x)))
-    label <- sjlabelled::get_labels(x, drop.unused = TRUE)
-
-    if (length(label) < length(value)) {
-      label <- c(label, rep(NA, length(value) - length(label)))
-    }
-
-    count <- summary(as.factor(na.omit(x)))
-    na_count <- sum(is.na(x))
-
-    result <- tibble::tibble(
-      name = column,
-      value = c(value, NA),
-      label = c(label, "No response"),
-      count = c(as.numeric(count), na_count)
+  # … all your existing code up through wide creation …
+  wide <- combined_results %>%
+    tidyr::pivot_wider(
+      names_from  = name,
+      values_from = count,
+      values_fill = list(count = 0)
     )
 
-    # Sort the result by value
-    result <- result %>%
-      dplyr::arrange(value)
+  # build display names: first two capitalized, rest unchanged
+  display_names <- c(
+    "Value",
+    "Label",
+    names(wide)[ -c(1,2) ]
+  )
 
-    combined_results <- dplyr::bind_rows(combined_results, result)
-  }
+  # print scrollable table with new headers
+  wide %>%
+    kableExtra::kbl(
+      col.names = display_names,
+      centering = TRUE,
+      align     = "c"
+    ) %>%
+    kableExtra::kable_styling(
+      bootstrap_options = c("hover", "condensed")
+    ) %>%
+    kableExtra::scroll_box(
+      width  = "100%",
+      height = "400px"
+    ) %>%
+    print()
 
-  combined_results %>%
-    tidyr::pivot_wider(names_from = name, values_from = count, values_fill = list(count = 0))
+  invisible(wide)
 }
 
 #' Inspect Variable Labels
