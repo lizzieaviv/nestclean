@@ -3,7 +3,6 @@
 export(check_categorical)
 export(check_continuous)
 export(inspect_labels)
-export(inspect_var_names)
 export(print_slice)
 export(print_slice_chirp)
 export(view_selected)
