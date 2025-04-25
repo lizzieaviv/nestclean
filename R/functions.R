@@ -1,13 +1,18 @@
 # any time I make a change, run the following: devtools::document(); devtools::install()
 
+
+
 #' Summarize Continuous Variables
 #'
-#' This function calculates summary statistics (mean, minimum, maximum, and missing count) for specified continuous variables in a data frame. The results are returned in a long format with each statistic as a separate row.
+#' This function calculates summary statistics (mean, min, max, missing count)
+#' for specified continuous variables in a data frame.
 #'
 #' @param df A data frame containing the variables to be summarized.
-#' @param ... One or more unquoted expressions separated by commas, indicating variables to summarize (e.g., column names, column ranges, or selection helpers like contains()).
-#' @return A data frame in long format with the summary statistics for each variable.
-#' @importFrom dplyr ungroup summarise across arrange
+#' @param ... One or more unquoted expressions (e.g., column names or helpers like contains()).
+#'
+#' @return A long-format data frame of summary statistics.
+#'
+#' @importFrom dplyr summarise across ungroup arrange
 #' @importFrom tidyr pivot_longer
 #' @importFrom magrittr %>%
 #' @export
@@ -188,12 +193,15 @@ check_categorical <- function(df, ...) {
 #'
 #' This function retrieves the labels of specified variables in a data frame and displays them in a formatted table.
 #'
+
 #' @param df A data frame containing the variables.
 #' @param ... One or more unquoted expressions separated by commas, indicating variables to retrieve labels for (e.g., column names, column ranges, or selection helpers like contains()).
 #' @return A formatted table displaying the variable labels.
 #' @importFrom dplyr select
 #' @importFrom sjlabelled get_label
 #' @importFrom kableExtra kbl kable_styling column_spec row_spec scroll_box
+#' @importFrom stats na.omit
+#' @importFrom utils View
 #' @importFrom magrittr %>%
 #' @export
 inspect_labels <- function(df, ...) {
@@ -232,8 +240,6 @@ inspect_labels <- function(df, ...) {
 #' @return A data frame with two columns: `value` and `label`.
 #' @export
 #'
-#' @examples
-#' inspect_value_labels(df, starts_with("AAS"))
 inspect_value_labels <- function(df, ...) {
   df %>%
     dplyr::select(...) %>%

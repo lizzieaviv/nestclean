@@ -9,11 +9,12 @@ check_continuous(df, ...)
 \arguments{
 \item{df}{A data frame containing the variables to be summarized.}
 
-\item{...}{One or more unquoted expressions separated by commas, indicating variables to summarize (e.g., column names, column ranges, or selection helpers like contains()).}
+\item{...}{One or more unquoted expressions (e.g., column names or helpers like contains()).}
 }
 \value{
-A data frame in long format with the summary statistics for each variable.
+A long-format data frame of summary statistics.
 }
 \description{
-This function calculates summary statistics (mean, minimum, maximum, and missing count) for specified continuous variables in a data frame. The results are returned in a long format with each statistic as a separate row.
+This function calculates summary statistics (mean, min, max, missing count)
+for specified continuous variables in a data frame.
 }
