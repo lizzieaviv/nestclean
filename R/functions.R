@@ -63,46 +63,48 @@ check_categorical <- function(df, ...) {
   for (column in selected_columns) {
     x <- df[[column]]
 
-    # 1. Get all defined label codes & their text
+    # 1. grab full label defs (codes → text), keep unused levels
     label_vec  <- sjlabelled::get_labels(x, drop.unused = FALSE)
     label_defs <- tibble::tibble(
-      value = as.numeric(label_vec),   # the coded values
-      label = names(label_vec)         # the text labels
+      value = unname(label_vec),      # the numeric codes
+      label = names(label_vec)        # the corresponding text
     )
 
-    # 2. Determine all codes we need (observed + defined)
+    # 2. observed non-NA codes
     observed_vals <- sort(unique(sjlabelled::remove_all_labels(x)))
-    all_vals      <- sort(union(observed_vals, label_defs$value))
 
-    # 3. Count each code (0 if never seen)
+    # 3. union of observed + defined codes
+    all_vals <- sort(unique(c(observed_vals, label_defs$value)))
+
+    # 4. count each code (0 if absent)
     count_df <- tibble::tibble(
       name  = column,
       value = all_vals,
       count = purrr::map_dbl(all_vals, ~ sum(x == .x, na.rm = TRUE))
     )
 
-    # 4. Add the “No response” row
-    na_row <- tibble::tibble(
-      name  = column,
-      value = NA_real_,
-      count = sum(is.na(x))
-    )
-
-    # 5. Merge in labels, then bind the NA row
+    # 5. join in text labels, then add the NA row
     result <- count_df %>%
       dplyr::left_join(label_defs, by = "value") %>%
-      dplyr::bind_rows(na_row %>% dplyr::mutate(label = "No response")) %>%
+      dplyr::bind_rows(
+        tibble::tibble(
+          name  = column,
+          value = NA_real_,
+          label = "No response",
+          count = sum(is.na(x))
+        )
+      ) %>%
       dplyr::arrange(value)
 
     combined_results <- dplyr::bind_rows(combined_results, result)
   }
 
-  # 6. Pivot to wide
+  # 6. pivot to wide, filling missing with 0
   combined_results %>%
     tidyr::pivot_wider(
-      names_from   = name,
-      values_from  = count,
-      values_fill  = list(count = 0)
+      names_from  = name,
+      values_from = count,
+      values_fill = list(count = 0)
     )
 }
 
