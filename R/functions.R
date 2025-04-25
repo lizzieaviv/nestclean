@@ -150,77 +150,38 @@ check_categorical <- function(df, ...) {
     colnames()
 
   combined_results <- tibble::tibble()
-  value_label_table <- tibble::tibble()
 
   for (column in selected_columns) {
     x <- df[[column]]
+    value <- sort(unique(sjlabelled::remove_all_labels(x)))
+    label <- sjlabelled::get_labels(x, drop.unused = TRUE)
 
-    # Value-label mapping
-    values <- sort(unique(sjlabelled::remove_all_labels(x)))
-    labels <- sjlabelled::get_labels(x, drop.unused = TRUE)
-
-    if (length(labels) < length(values)) {
-      labels <- c(labels, rep(NA, length(values) - length(labels)))
-    }
-
-    if (length(values) > 0 || length(labels) > 0) {
-      value_label_table <- bind_rows(
-        value_label_table,
-        tibble(value = values, label = labels)
-      )
+    if (length(label) < length(value)) {
+      label <- c(label, rep(NA, length(value) - length(label)))
     }
 
     count <- summary(as.factor(na.omit(x)))
     na_count <- sum(is.na(x))
 
-    if (length(values) > 0) {
-      result <- tibble(
-        name  = column,
-        value = c(values, NA),
-        label = c(labels, "No response"),
-        count = c(as.numeric(count), na_count)
-      )
+    result <- tibble::tibble(
+      name  = column,
+      value = c(value, NA),
+      label = c(label, "No response"),
+      count = c(as.numeric(count), na_count)
+    )
 
-      result <- tryCatch({
-        dplyr::arrange(result, value)
-      }, error = function(e) {
-        result  # skip arrange if it fails
-      })
+    result <- result %>%
+      dplyr::arrange(value)
 
-      combined_results <- bind_rows(combined_results, result)
-    }
+    combined_results <- dplyr::bind_rows(combined_results, result)
   }
 
-  value_label_table <- dplyr::distinct(value_label_table)
-
-  if (nrow(value_label_table) > 0) {
-    value_label_kbl <- value_label_table %>%
-      kableExtra::kbl(centering = TRUE, align = c("c", "l")) %>%
-      kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-      kableExtra::column_spec(1:2, width = "auto", border_left = TRUE, border_right = TRUE) %>%
-      kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%
-      kableExtra::scroll_box(height = "400px", width = "100%")
-
-    print(value_label_kbl)
-  }
-
-  if (nrow(combined_results) > 0) {
-    count_table <- combined_results %>%
-      tidyr::pivot_wider(
-        names_from = name,
-        values_from = count,
-        values_fill = list(count = 0)
-      )
-
-    count_table_kbl <- count_table %>%
-      kableExtra::kbl(centering = TRUE) %>%
-      kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-      kableExtra::scroll_box(height = "400px", width = "100%")
-
-    print(count_table_kbl)
-  }
-
-  invisible(NULL)
+  combined_results %>%
+    tidyr::pivot_wider(
+      names_from  = name,
+      values_from = count,
+      values_fill = list(count = 0)
+    )
 }
 
 #' Inspect Variable Labels
@@ -258,6 +219,31 @@ inspect_labels <- function(df, ...) {
     kableExtra::scroll_box(height = "400px", width = "100%")
 
   return(formatted_output)
+}
+
+#' Inspect Value Labels
+#'
+#' This function returns a table of unique values and their corresponding labels
+#' for the specified labelled variables in a data frame.
+#'
+#' @param df A data frame containing the labelled variables.
+#' @param ... One or more unquoted column names or selection helpers (e.g., `starts_with()`).
+#'
+#' @return A data frame with two columns: `value` and `label`.
+#' @export
+#'
+#' @examples
+#' inspect_value_labels(df, starts_with("AAS"))
+inspect_value_labels <- function(df, ...) {
+  df %>%
+    dplyr::select(...) %>%
+    purrr::map_dfr(~ {
+      tibble::tibble(
+        value = sort(unique(sjlabelled::remove_all_labels(.x))),
+        label = sjlabelled::get_labels(.x, drop.unused = TRUE)
+      )
+    }) %>%
+    dplyr::distinct()
 }
 
 #' Print a Random Slice of Data: HATCH
