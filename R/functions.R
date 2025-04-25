@@ -12,20 +12,31 @@
 #' @importFrom magrittr %>%
 #' @export
 check_continuous <- function(df, ...) {
-  df %>%
+  # 1. Build the summary & pivot, assign to out
+  out <- df %>%
     dplyr::ungroup() %>%
-    dplyr::summarise(across(c(...), list(
-      mean = ~round(mean(.x, na.rm = TRUE), 1),
-      min = ~min(.x, na.rm = TRUE),
-      max = ~max(.x, na.rm = TRUE),
-      missing = ~sum(is.na(.x))
-    ), .names = "{.fn}-{.col}")) %>%
-    tidyr::pivot_longer(everything(),
-                        names_to = c("function", ".value"),
-                        names_sep = "-")
+    dplyr::summarise(
+      across(
+        c(...),
+        list(
+          mean    = ~ round(mean(.x, na.rm = TRUE), 1),
+          min     = ~ min(.x, na.rm = TRUE),
+          max     = ~ max(.x, na.rm = TRUE),
+          missing = ~ sum(is.na(.x))
+        ),
+        .names = "{.fn}-{.col}"
+      )
+    ) %>%
+    tidyr::pivot_longer(
+      cols      = everything(),
+      names_to  = c("function", ".value"),
+      names_sep = "-"
+    )
 
-  # blank out the first column name
+  # 2. Blank out the first column header
   names(out)[1] <- ""
+
+  # 3. Return the result
   out
 }
 
