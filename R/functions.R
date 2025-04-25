@@ -54,34 +54,9 @@ check_continuous <- function(df, ...) {
 #' @importFrom magrittr %>%
 #' @export
 check_categorical <- function(df, ...) {
-  selected_columns <- df %>%
-    dplyr::select(...) %>%
-    colnames()
-
+  # … everything you already have up through pivoting …
   combined_results <- tibble::tibble()
-
-  for (column in selected_columns) {
-    x <- df[[column]]
-    value <- sort(unique(sjlabelled::remove_all_labels(x)))
-    label <- sjlabelled::get_labels(x, drop.unused = TRUE)
-
-    if (length(label) < length(value)) {
-      label <- c(label, rep(NA, length(value) - length(label)))
-    }
-
-    count    <- summary(as.factor(na.omit(x)))
-    na_count <- sum(is.na(x))
-
-    result <- tibble::tibble(
-      name  = column,
-      value = c(value, NA),
-      label = c(label, "No response"),
-      count = c(as.numeric(count), na_count)
-    ) %>%
-      dplyr::arrange(value)
-
-    combined_results <- dplyr::bind_rows(combined_results, result)
-  }
+  # [your for-loop building combined_results]
 
   wide <- combined_results %>%
     tidyr::pivot_wider(
@@ -90,10 +65,19 @@ check_categorical <- function(df, ...) {
       values_fill = list(count = 0)
     )
 
-  # ─── Rename the two display columns ───
-  names(wide)[1:2] <- c("Value", "Label")
+  # ── NEW ── build display names, print, then return invisibly ──
+  display_names <- c("Value", "Label", names(wide)[-c(1,2)])
+  wide %>%
+    kableExtra::kbl(
+      col.names = display_names,
+      centering = TRUE,
+      align     = "c"
+    ) %>%
+    kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+    kableExtra::scroll_box(width = "100%", height = "400px") %>%
+    print()
 
-  return(wide)
+  invisible(wide)
 }
 
 #' Inspect Variable Labels
