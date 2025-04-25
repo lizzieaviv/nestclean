@@ -54,7 +54,6 @@ check_continuous <- function(df, ...) {
 #' @importFrom magrittr %>%
 #' @export
 check_categorical <- function(df, ...) {
-  # 1. figure out which columns to summarize
   selected_columns <- df %>%
     dplyr::select(...) %>%
     colnames()
@@ -63,51 +62,29 @@ check_categorical <- function(df, ...) {
 
   for (column in selected_columns) {
     x <- df[[column]]
+    value <- sort(unique(sjlabelled::remove_all_labels(x)))
+    label <- sjlabelled::get_labels(x, drop.unused = TRUE)
 
-    # 2. get the raw numeric/vector of values (strip labels entirely)
-    raw_vals <- sjlabelled::remove_all_labels(x)
-    # force numeric for counting
-    raw_vals_num <- as.numeric(raw_vals)
+    if (length(label) < length(value)) {
+      label <- c(label, rep(NA, length(value) - length(label)))
+    }
 
-    # 3. pull every defined label (keep unused)
-    label_vec  <- sjlabelled::get_labels(x, drop.unused = FALSE)
-    label_defs <- tibble::tibble(
-      value = as.numeric(label_vec),
-      label = names(label_vec)
-    )
+    count <- summary(as.factor(na.omit(x)))
+    na_count <- sum(is.na(x))
 
-    # 4. all codes to count = observed + defined
-    observed_vals <- unique(raw_vals_num[!is.na(raw_vals_num)])
-    all_vals      <- sort(unique(c(observed_vals, label_defs$value)))
-
-    # 5. count each code, plus NA
-    counts <- sapply(all_vals, function(v) sum(raw_vals_num == v, na.rm = TRUE))
-    na_count <- sum(is.na(raw_vals_num))
-
-    # 6. build a little data.frame
-    df_counts <- tibble::tibble(
+    result <- tibble::tibble(
       name  = column,
-      value = all_vals,
-      count = as.numeric(counts)
+      value = c(value, NA),
+      label = c(label, "No response"),
+      count = c(as.numeric(count), na_count)
     )
 
-    # 7. join in the text labels, add the NA‐row
-    result <- df_counts %>%
-      dplyr::left_join(label_defs, by = "value") %>%
-      dplyr::bind_rows(
-        tibble::tibble(
-          name  = column,
-          value = NA_real_,
-          label = "No response",
-          count = na_count
-        )
-      ) %>%
+    result <- result %>%
       dplyr::arrange(value)
 
     combined_results <- dplyr::bind_rows(combined_results, result)
   }
 
-  # 8. pivot to wide, fill missing with 0
   combined_results %>%
     tidyr::pivot_wider(
       names_from  = name,
@@ -129,11 +106,28 @@ check_categorical <- function(df, ...) {
 #' @importFrom magrittr %>%
 #' @export
 inspect_labels <- function(df, ...) {
-  df_selected <- df %>%
-    dplyr::select(...)
+  df_selected <- df %>% dplyr::select(...)
 
   original_column_numbers <- match(names(df_selected), names(df))
 
+  # ── Create value-label table (formerly get_value_labels) ──
+  value_label_df <- df_selected %>%
+    purrr::map_dfr(~ {
+      tibble(
+        value = sort(unique(sjlabelled::remove_all_labels(.x))),
+        label = sjlabelled::get_labels(.x, drop.unused = TRUE)
+      )
+    }) %>%
+    dplyr::distinct()
+
+  formatted_value_label_table <- value_label_df %>%
+    kableExtra::kbl(centering = TRUE, align = c("c", "l")) %>%
+    kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
+    kableExtra::column_spec(1:2, width = "auto", border_left = TRUE, border_right = TRUE) %>%
+    kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%
+    kableExtra::scroll_box(height = "400px", width = "100%")
+
+  # ── Create variable label table ──
   labels_df <- data.frame(
     Column_Number = original_column_numbers,
     Variable = names(df_selected),
@@ -141,7 +135,7 @@ inspect_labels <- function(df, ...) {
     stringsAsFactors = FALSE
   )
 
-  formatted_output <- labels_df %>%
+  formatted_label_table <- labels_df %>%
     kableExtra::kbl(centering = TRUE, align = c("c", "l", "l")) %>%
     kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
     kableExtra::column_spec(1, width = "auto", border_left = TRUE, border_right = TRUE) %>%
@@ -150,7 +144,10 @@ inspect_labels <- function(df, ...) {
     kableExtra::row_spec(0, bold = TRUE, align = "center", extra_css = "border-bottom: 2px solid;") %>%
     kableExtra::scroll_box(height = "400px", width = "100%")
 
-  return(formatted_output)
+  list(
+    value_labels = formatted_value_label_table,
+    variable_labels = formatted_label_table
+  )
 }
 
 
