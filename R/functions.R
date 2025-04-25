@@ -54,30 +54,51 @@ check_continuous <- function(df, ...) {
 #' @importFrom magrittr %>%
 #' @export
 check_categorical <- function(df, ...) {
-  # … everything you already have up through pivoting …
-  combined_results <- tibble::tibble()
-  # [your for-loop building combined_results]
+  selected_columns <- df %>%
+    dplyr::select(...) %>%
+    colnames()
 
-  wide <- combined_results %>%
+  combined_results <- tibble::tibble()
+
+  for (column in selected_columns) {
+    x <- df[[column]]
+
+    # 1. Get all defined label values (keep unused)
+    label_vec    <- sjlabelled::get_labels(x, drop.unused = FALSE)
+    all_vals     <- suppressWarnings(as.numeric(names(label_vec)))
+
+    # 2. Get observed (non-NA) values
+    observed_vals <- sort(unique(sjlabelled::remove_all_labels(x)))
+
+    # 3. Union for full set of values
+    value <- sort(union(observed_vals, all_vals))
+
+    # 4. Align labels to that full set
+    label <- label_vec[as.character(value)]
+
+    # 5. Count occurrences (0 if absent)
+    count    <- sapply(value, function(v) sum(x == v, na.rm = TRUE))
+    na_count <- sum(is.na(x))
+
+    # 6. Build a long‐format tibble for this variable
+    result <- tibble::tibble(
+      name  = column,
+      value = c(value, NA),
+      label = c(unname(label), "No response"),
+      count = c(as.numeric(count), na_count)
+    ) %>%
+      dplyr::arrange(value)
+
+    combined_results <- dplyr::bind_rows(combined_results, result)
+  }
+
+  # 7. Pivot to wide, filling zeros
+  combined_results %>%
     tidyr::pivot_wider(
       names_from  = name,
       values_from = count,
       values_fill = list(count = 0)
     )
-
-  # ── NEW ── build display names, print, then return invisibly ──
-  display_names <- c("Value", "Label", names(wide)[-c(1,2)])
-  wide %>%
-    kableExtra::kbl(
-      col.names = display_names,
-      centering = TRUE,
-      align     = "c"
-    ) %>%
-    kableExtra::kable_styling(bootstrap_options = c("hover", "condensed")) %>%
-    kableExtra::scroll_box(width = "100%", height = "400px") %>%
-    print()
-
-  invisible(wide)
 }
 
 #' Inspect Variable Labels
